@@ -81,20 +81,44 @@ class NestedQueryError(PrologError):
 
 
 def __initialize():
-    args = []
-    args.append("./")
-    args.append("-q")  # --quiet
-    args.append("--nosignals")  # "Inhibit any signal handling by Prolog"
+    import os
+    import pathlib
+
+    # Default flags
+    args = ["./", "-q", "--nosignals"]
+    # Add SWI_HOME_DIR if available
     if SWI_HOME_DIR:
         args.append(f"--home={SWI_HOME_DIR}")
+
+    # Read flags from environment variable
+    env_flags = os.environ.get("SWIPL_FLAGS", "")
+    if env_flags:
+        args += env_flags.split()
+
+    # Read flags from configuration file. By default, it looks for a file named `swipl.conf` in the current directory, the script's directory, and the user's home directory.
+    config_path = os.environ.get("SWIPL_CONF_PATH", "swipl.conf")
+    search_paths = [
+        pathlib.Path(config_path),
+        pathlib.Path(__file__).parent / config_path,
+        pathlib.Path.home() / config_path,
+    ]
+    for path in search_paths:
+        if path.exists():
+            with path.open() as f:
+                file_flags = f.read().strip().split()
+                args += file_flags
+            break
+
+
+    print(f"[PySwip] SWI-Prolog flags: {args}")
 
     result = PL_initialise(len(args), args)
     # result is a boolean variable (i.e. 0 or 1) indicating whether the
     # initialisation was successful or not.
     if not result:
         raise PrologError(
-            "Could not initialize the Prolog environment."
-            "PL_initialise returned %d" % result
+            f"Could not initialize the Prolog environment. Flags: {args}. "
+            f"PL_initialise returned {result}"
         )
 
     swipl_fid = PL_open_foreign_frame()
