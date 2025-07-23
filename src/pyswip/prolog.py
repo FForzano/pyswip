@@ -85,18 +85,42 @@ def __initialize():
     import pathlib
 
     # Default flags
-    args = ["./", "-q", "--nosignals"]
+    args_dict = {
+        "./": True,
+        "-q": True,
+        "--nosignals": True
+    }
     # Add SWI_HOME_DIR if available
     if SWI_HOME_DIR:
-        args.append(f"--home={SWI_HOME_DIR}")
+        args_dict[f"--home"] = f"{SWI_HOME_DIR}"
 
-    # Read flags from environment variable
-    env_flags = os.environ.get("SWIPL_FLAGS", "")
-    if env_flags:
-        args += env_flags.split()
+    # Read flags from environment variables: SWIPL_<FLAGNAME>
+    from pyswip.utils import validate_swipl_flag
+    for key in os.environ:
+        if key.startswith("SWIPL_") and key not in ("SWIPL_CONF_PATH"):
+            flag_name = key[6:].lower().replace("_", "-")
+            value = os.environ[key]
+            # Try to convert value to int/bool if possible
+            if value.lower() in ("true", "false"):
+                value_conv = value.lower() == "true"
+            else:
+                try:
+                    value_conv = int(value)
+                except ValueError:
+                    try:
+                        value_conv = float(value)
+                    except ValueError:
+                        value_conv = value
+            if not validate_swipl_flag(flag_name, value_conv):
+                print(f"[PySwip] Ignored invalid flag from env: {flag_name}={value}")
+                continue
+            if isinstance(value_conv, bool):
+                args_dict[f"--{flag_name}"] = True
+            else:
+                args_dict[f"--{flag_name}"] = value_conv
 
-    # Read flags from configuration file. By default, it looks for a file named `swipl.conf` in the current directory, the script's directory, and the user's home directory.
-    config_path = os.environ.get("SWIPL_CONF_PATH", "swipl.conf")
+    # Read flags from swipl.toml configuration file. Each flag is a key in the [swipl] section.
+    config_path = os.environ.get("SWIPL_CONF_PATH", "swipl.toml")
     search_paths = [
         pathlib.Path(config_path),
         pathlib.Path(__file__).parent / config_path,
@@ -104,13 +128,29 @@ def __initialize():
     ]
     for path in search_paths:
         if path.exists():
-            with path.open() as f:
-                file_flags = f.read().strip().split()
-                args += file_flags
+            import tomli
+            config = {}
+            with path.open("rb") as f:
+                config = tomli.load(f)
+            swipl_section = config.get("swipl", {})
+            for key, value in swipl_section.items():
+                if not validate_swipl_flag(key, value):
+                    print(f"[PySwip] Ignored invalid flag: {key}={value}")
+                    continue
+                if isinstance(value, bool):
+                    args_dict[f"--{key}"] = True
+                else:
+                    args_dict[f"--{key}"] = value
             break
 
+    args = []
+    for key, value in args_dict.items():
+        if value is True:
+            args.append(key)
+        else:
+            args.append(f"{key}={value}")
 
-    print(f"[PySwip] SWI-Prolog flags: {args}")
+    print("SWI-Prolog args:", args)  # Debugging output
 
     result = PL_initialise(len(args), args)
     # result is a boolean variable (i.e. 0 or 1) indicating whether the
