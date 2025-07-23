@@ -1,0 +1,4 @@
+[swipl]
+debug = true
+stack-limit = "1000000K"
+unknown = "fail" # non supportato da SWI-Prolog come flag da riga di comando

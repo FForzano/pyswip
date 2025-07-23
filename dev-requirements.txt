@@ -4,3 +4,4 @@ pytest-cov
 mypy>=1.0.0
 Sphinx
 sphinx-autodoc-typehints
+tomli

@@ -38,6 +38,37 @@ Thanks to all [contributors](CONTRIBUTORS.txt).
 * [PySwip Home](https://pyswip.org)
 * [PySwip Documentation](https://pyswip.readthedocs.io/en/latest/)
 
+## SWI-Prolog Flag Configuration
+PySwip allows you to configure SWI-Prolog flags via a TOML file (`swipl.toml`)
+or environment variables. Only flags supported by the SWI-Prolog command-line
+interface are accepted and validated according to the [official
+documentation](https://www.swi-prolog.org/pldoc/man?section=flags).
+
+By default, PySwip looks for a file named `swipl.toml` in the current working directory. You can specify a different configuration file by setting the `SWIPL_CONF_FILE` environment variable:
+
+```bash
+export SWIPL_CONF_FILE="/path/to/custom_swipl.toml"
+```
+
+Example TOML configuration
+```toml
+[swipl]
+debug = true
+stack-limit = "1000000K"
+````
+
+Example environment variable
+Set an environment variable for a flag:
+```bash
+export SWIPL_STACK_LIMIT="512M"
+```
+
+Notes
+- Integer flags that accept units (K, M, G, B) must be passed as strings in TOML
+(with quotes). 
+- Flags not supported by the SWI-Prolog CLI are ignored. 
+- Validation is automatic and follows SWI-Prolog documentation.
+
 ## Examples
 
 ### Using Prolog
