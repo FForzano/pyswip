@@ -44,6 +44,12 @@ or environment variables. Only flags supported by the SWI-Prolog command-line
 interface are accepted and validated according to the [official
 documentation](https://www.swi-prolog.org/pldoc/man?section=flags).
 
+By default, PySwip looks for a file named `swipl.toml` in the current working directory. You can specify a different configuration file by setting the `SWIPL_CONF_FILE` environment variable:
+
+```bash
+export SWIPL_CONF_FILE="/path/to/custom_swipl.toml"
+```
+
 Example TOML configuration
 ```toml
 [swipl]
